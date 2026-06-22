@@ -16,13 +16,19 @@ The `ToolRegistry` interface (`packages/core/src/tools/types.ts:83-105`) is the 
 
 ### Workspace Path Containment
 
-File tools resolve user-supplied paths against `context.workspaceRoot` and reject targets that escape the workspace boundary. The shared helper `resolveInWorkspace` in `workspace.ts:32-51` resolves the path and checks whether the relative result starts with `..` — if so, it returns an `INVALID_PARAMS` error before any filesystem access.
+File tools resolve user-supplied paths against `context.workspaceRoot` and reject targets that escape the workspace boundary. The shared helper `resolveInWorkspace` in `workspace.ts:39-135` (`async`, returns `Promise<WorkspaceResult>`) rejects out-of-bound paths through three layers of containment checking:
 
-- **Read tool**: containment check at `read-tool.ts:42-45`, before read-state update and file I/O.
-- **Write tool**: containment check at `write-tool.ts:69-72`, before read-before-write guard and file creation.
-- **Edit tool**: containment check at `edit-tool.ts:63-66`, before read-before-write guard.
+1. **Lexical containment** — a fast check that rejects obvious `../` traversal and absolute-outside paths with zero filesystem access.
+2. **Canonical containment** — for existing targets, `fs.realpath` resolves all symlinks and the canonical path is checked against the canonical workspace root. This catches `link-to-outside/secret.txt` where the symlink points outside.
+3. **Parent-walk containment** — for non-existing targets (new file writes), walks up the directory tree to find the nearest existing ancestor, resolves symlinks via `realpath`, and verifies containment.
 
-Valid in-workspace absolute paths are accepted as long as they resolve inside `workspaceRoot`.
+All three layers return `INVALID_PARAMS` before any filesystem I/O occurs.
+
+- **Read tool**: containment check at `read-tool.ts:42-44` (`await resolveInWorkspace`), before read-state update and file I/O.
+- **Write tool**: containment check at `write-tool.ts:69-71` (`await resolveInWorkspace`), before read-before-write guard and file creation.
+- **Edit tool**: containment check at `edit-tool.ts:63-65` (`await resolveInWorkspace`), before read-before-write guard.
+
+Valid in-workspace absolute paths are accepted as long as they resolve inside `workspaceRoot`. Paths whose first segment begins with `..` but is not a parent traversal (e.g. `..foo/file.txt`) are preserved.
 
 ### Read-Before-Write Safety
 
@@ -59,8 +65,8 @@ When the composer generates tool descriptions (`packages/core/src/context/compos
 ```
 Runtime ──► ToolRegistry ──► execute(id, params, context) ──► ToolResult
                 │               │
-                │               ├── resolveInWorkspace() ──► workspace.ts:32-51
-                │               │      INVALID_PARAMS if path escapes workspaceRoot
+                │               ├── resolveInWorkspace() ──► workspace.ts:39-135
+                │               │      INVALID_PARAMS (lexical / realpath / parent-walk)
                 │               │      resolved path (string) if valid
                 │               │
                 │               ├── (read|write|edit) handler

@@ -55,8 +55,8 @@ Invalid parameters (empty file paths, non-string content, empty commands) are re
 
 ## Workspace Path Containment
 
-File paths that resolve outside the configured workspace root are rejected with `INVALID_PARAMS` before any filesystem access. The shared helper `resolveInWorkspace` (`packages/core/src/tools/workspace.ts:32-51`) checks containment by comparing the resolved path's relative offset against the workspace root — any path starting with `..` is rejected.
+File paths that resolve outside the configured workspace root are rejected with `INVALID_PARAMS` before any filesystem access. The shared async helper `resolveInWorkspace` (`packages/core/src/tools/workspace.ts:39-135`) checks containment at three levels: lexical (fast pass for obvious `../` traversal), realpath-based (for existing targets whose symlinks may point outside), and parent-walk realpath (for new file writes through symlinked directories).
 
-**Evidence**: `workspace.ts:40-48` (containment check), `read-tool.ts:42-45` (read guard), `write-tool.ts:69-72` (write guard), `edit-tool.ts:63-66` (edit guard).
+**Evidence**: `workspace.ts:39-135` (containment check), `read-tool.ts:42-44` (read guard), `write-tool.ts:69-71` (write guard), `edit-tool.ts:63-65` (edit guard).
 
-**Reason**: Workspace containment prevents path traversal attacks and ensures the agent operates within its declared workspace boundary. Rejecting before filesystem access avoids partial I/O effects on out-of-bounds paths.
+**Reason**: Workspace containment prevents path traversal attacks and ensures the agent operates within its declared workspace boundary. Canonical resolution via `fs.realpath` catches symlink-based escapes that a purely lexical check would miss. Rejecting before filesystem access avoids partial I/O effects on out-of-bounds paths.
