@@ -36,6 +36,80 @@ def _resolve_dir(project_dir: str | None = None) -> str:
     return str(Path(project_dir or ".").resolve())
 
 
+def _spawn_review_subagent(
+    ctx,
+    prompt: str,
+    phase_label: str,
+    section_title: str,
+    diff_label: str,
+    subagent_label: str,
+    task_id: str,
+    project_dir: str,
+) -> str:
+    """Shared logic for verify/simplify handlers: look up task, diff, and spawn subagent.
+
+    All parameters are literals supplied by each handler's closure so that
+    log messages, context titles, and the phase field reflect the correct phase.
+    Returns a JSON string with spawn results or error.
+    """
+    task = state.get_task(task_id)
+    if not task:
+        return json.dumps(
+            {
+                "error": f"Task '{task_id}' not found. "
+                "Did you call jovaltus_implement first?",
+            }
+        )
+
+    try:
+        diff_text = git_utils.get_diff(task["start_hash"], "HEAD", project_dir)
+        files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
+
+        logger.info(
+            "jovaltus_%s: spawning %s subagent task=%s files=%d",
+            phase_label,
+            subagent_label,
+            task_id,
+            len(files),
+        )
+
+        ctx.dispatch_tool(
+            "delegate_task",
+            {
+                "goal": prompt,
+                "context": (
+                    f"## {section_title}\n\n"
+                    f"Working directory: {project_dir}\n"
+                    f"Task: {task_id}\n"
+                    f"Baseline commit: {task['start_hash']}\n"
+                    f"Files changed:\n"
+                    + "\n".join(
+                        f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
+                        for f in files
+                    )
+                    + f"\n\n## {diff_label}\n\n```diff\n{diff_text}\n```"
+                ),
+                "toolsets": ["terminal", "file"],
+            },
+        )
+
+        return json.dumps(
+            {
+                "task_id": task_id,
+                "start_hash": task["start_hash"],
+                "diff": diff_text,
+                "files_changed": files,
+                "project_dir": project_dir,
+                "subagent": "spawned",
+                "phase": phase_label,
+            }
+        )
+
+    except Exception as e:
+        logger.exception("jovaltus_%s failed", phase_label)
+        return json.dumps({"error": str(e)})
+
+
 # ── Factory functions (called from register()) ──────────────────────
 
 
@@ -103,61 +177,16 @@ def make_verify_handler(ctx):
     def handler(args: dict, **kwargs) -> str:
         task_id = args.get("task_id", "")
         project_dir = _resolve_dir(args.get("project_dir"))
-
-        task = state.get_task(task_id)
-        if not task:
-            return json.dumps(
-                {
-                    "error": f"Task '{task_id}' not found. "
-                    "Did you call jovaltus_implement first?",
-                }
-            )
-
-        try:
-            diff_text = git_utils.get_diff(task["start_hash"], "HEAD", project_dir)
-            files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
-
-            logger.info(
-                "jovaltus_verify: spawning verify subagent task=%s files=%d",
-                task_id,
-                len(files),
-            )
-
-            ctx.dispatch_tool(
-                "delegate_task",
-                {
-                    "goal": prompt,
-                    "context": (
-                        f"## Verification Context\n\n"
-                        f"Working directory: {project_dir}\n"
-                        f"Task: {task_id}\n"
-                        f"Baseline commit: {task['start_hash']}\n"
-                        f"Files changed:\n"
-                        + "\n".join(
-                            f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
-                            for f in files
-                        )
-                        + f"\n\n## Git Diff\n\n```diff\n{diff_text}\n```"
-                    ),
-                    "toolsets": ["terminal", "file"],
-                },
-            )
-
-            return json.dumps(
-                {
-                    "task_id": task_id,
-                    "start_hash": task["start_hash"],
-                    "diff": diff_text,
-                    "files_changed": files,
-                    "project_dir": project_dir,
-                    "subagent": "spawned",
-                    "phase": "verify",
-                }
-            )
-
-        except Exception as e:
-            logger.exception("jovaltus_verify failed")
-            return json.dumps({"error": str(e)})
+        return _spawn_review_subagent(
+            ctx,
+            prompt,
+            "verify",
+            "Verification Context",
+            "Git Diff",
+            "verify",
+            task_id,
+            project_dir,
+        )
 
     return handler
 
@@ -169,60 +198,15 @@ def make_simplify_handler(ctx):
     def handler(args: dict, **kwargs) -> str:
         task_id = args.get("task_id", "")
         project_dir = _resolve_dir(args.get("project_dir"))
-
-        task = state.get_task(task_id)
-        if not task:
-            return json.dumps(
-                {
-                    "error": f"Task '{task_id}' not found. "
-                    "Did you call jovaltus_implement first?",
-                }
-            )
-
-        try:
-            diff_text = git_utils.get_diff(task["start_hash"], "HEAD", project_dir)
-            files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
-
-            logger.info(
-                "jovaltus_simplify: spawning simplifier subagent task=%s files=%d",
-                task_id,
-                len(files),
-            )
-
-            ctx.dispatch_tool(
-                "delegate_task",
-                {
-                    "goal": prompt,
-                    "context": (
-                        f"## Simplification Context\n\n"
-                        f"Working directory: {project_dir}\n"
-                        f"Task: {task_id}\n"
-                        f"Baseline commit: {task['start_hash']}\n"
-                        f"Files changed:\n"
-                        + "\n".join(
-                            f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
-                            for f in files
-                        )
-                        + f"\n\n## Clean Diff\n\n```diff\n{diff_text}\n```"
-                    ),
-                    "toolsets": ["terminal", "file"],
-                },
-            )
-
-            return json.dumps(
-                {
-                    "task_id": task_id,
-                    "start_hash": task["start_hash"],
-                    "diff": diff_text,
-                    "files_changed": files,
-                    "project_dir": project_dir,
-                    "subagent": "spawned",
-                    "phase": "simplify",
-                }
-            )
-
-        except Exception as e:
-            logger.exception("jovaltus_simplify failed")
-            return json.dumps({"error": str(e)})
+        return _spawn_review_subagent(
+            ctx,
+            prompt,
+            "simplify",
+            "Simplification Context",
+            "Clean Diff",
+            "simplifier",
+            task_id,
+            project_dir,
+        )
 
     return handler
