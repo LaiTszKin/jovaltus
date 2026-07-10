@@ -8,7 +8,7 @@
 - `uv run mypy --strict --no-site-packages *.py` — Type check (zero errors)
 - All tests pass before commit. No lint, format, or type warnings.
 
-## Pre-commit Hooks (v0.3.3)
+## Pre-commit Hooks (v0.4.0)
 
 Three hooks run on every `git commit` in this order:
 
