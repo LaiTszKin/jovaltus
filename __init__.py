@@ -272,6 +272,51 @@ def _install_bundled_skills() -> bool:
     return all_ok
 
 
+# ── Plugin-to-profile linking ──────────────────────────────────────
+
+
+def _link_plugin_to_profile() -> bool:
+    """Symlink the installed plugin from global plugins dir into the profile.
+
+    Hermes loads plugins from the active profile's plugins/ directory when
+    starting a session (hermes -p jovaltus-agent).  This function creates
+    the symlink so the jovaltus plugin is available inside the profile.
+
+    Returns True if the link exists or was created.
+    """
+    global_plugins = _get_global_hermes_home() / "plugins"
+    plugin_src = global_plugins / "jovaltus"
+
+    if not plugin_src.exists():
+        print("  ! Plugin not found in global plugins directory.")
+        print("    Install it first: hermes plugins install LaiTszKin/jovaltus")
+        return False
+
+    profile_plugins = _get_profile_dir() / "plugins"
+    plugin_dst = profile_plugins / "jovaltus"
+
+    if plugin_dst.exists() or plugin_dst.is_symlink():
+        current = str(plugin_dst.resolve())
+        expected = str(plugin_src.resolve())
+        if current == expected:
+            print("  ✓ Plugin already linked to profile")
+            return True
+        # Pointing elsewhere — remove and re-link
+        try:
+            plugin_dst.unlink()
+        except OSError:
+            shutil.rmtree(plugin_dst, ignore_errors=True)
+
+    try:
+        profile_plugins.mkdir(parents=True, exist_ok=True)
+        plugin_dst.symlink_to(plugin_src, target_is_directory=True)
+        print(f"  ✓ Plugin linked to profile: {plugin_dst}")
+        return True
+    except OSError as e:
+        print(f"  ! Could not link plugin to profile: {e}")
+        return False
+
+
 # ── CLI handlers ───────────────────────────────────────────────────
 
 
@@ -279,9 +324,10 @@ def _setup_command(args) -> None:  # noqa: ARG001
     """Handler for 'hermes jovaltus setup'.
 
     1. Create jovaltus-agent profile if missing.
-    2. Install bundled skills (global).
-    3. Optionally apply SOUL.md (interactive, default: yes).
-    4. Persist installation state.
+    2. Link plugin from global plugins dir into profile (auto symlink).
+    3. Install bundled skills (global).
+    4. Optionally apply SOUL.md (interactive, default: yes).
+    5. Persist installation state.
     """
     print("⚡ Jovaltus Setup")
     print("━" * 40)
@@ -292,7 +338,11 @@ def _setup_command(args) -> None:  # noqa: ARG001
     if profile_ok:
         print(f"  ✓ Profile '{_get_profile_dir()}' ready")
 
-    # Step 2: Bundled skills
+    # Step 2: Link plugin to profile
+    print("\n🔗 Plugin Link")
+    _link_plugin_to_profile()
+
+    # Step 3: Bundled skills
     print("\n📚 Bundled Skills")
     with_skills = _prompt_yes_no("  Install bundled skills?", default=True)
     if with_skills:
