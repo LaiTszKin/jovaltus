@@ -1,5 +1,5 @@
 name: jovaltus
-version: 0.3.1
+version: 0.3.2
 description: Jovaltus Agent Mode — automated development pipeline (Plan → Implement → Verify → Simplify) as a Hermes plugin
 author: LaiTszKin
 provides_tools:

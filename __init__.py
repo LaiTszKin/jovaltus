@@ -272,51 +272,6 @@ def _install_bundled_skills() -> bool:
     return all_ok
 
 
-# ── Plugin-to-profile linking ──────────────────────────────────────
-
-
-def _link_plugin_to_profile() -> bool:
-    """Ensure the jovaltus plugin is accessible inside the jovaltus-agent profile.
-
-    When installed via `hermes plugins install LaiTszKin/jovaltus`, Hermes may
-    place the plugin in either the global plugins dir (~/.hermes/plugins/) or
-    directly in the profile's plugins dir.  This function handles both cases:
-
-    1. If already in the profile's plugins dir → report OK.
-    2. If in global plugins dir → symlink into profile.
-    3. If nowhere → report error.
-
-    Returns True if the plugin is accessible from the profile.
-    """
-    profile_plugins = _get_profile_dir() / "plugins"
-    profile_plugin = profile_plugins / "jovaltus"
-
-    # Case 1: Already inside the profile — nothing to do
-    if profile_plugin.exists() or profile_plugin.is_symlink():
-        print("  ✓ Plugin already available in profile")
-        return True
-
-    # Case 2: Found in global plugins dir — link into profile
-    global_plugins = _get_global_hermes_home() / "plugins"
-    global_plugin = global_plugins / "jovaltus"
-
-    if global_plugin.exists():
-        try:
-            profile_plugins.mkdir(parents=True, exist_ok=True)
-            profile_plugin.symlink_to(global_plugin, target_is_directory=True)
-            print(f"  ✓ Plugin linked to profile: {profile_plugin}")
-            return True
-        except OSError as e:
-            print(f"  ! Could not link plugin to profile: {e}")
-            return False
-
-    # Case 3: Not found anywhere
-    print("  ! Plugin not found in global or profile plugins directories.")
-    print("    Install it first: hermes plugins install LaiTszKin/jovaltus")
-    print("    (Run the install from outside the jovaltus repo)")
-    return False
-
-
 # ── CLI handlers ───────────────────────────────────────────────────
 
 
@@ -324,10 +279,9 @@ def _setup_command(args) -> None:  # noqa: ARG001
     """Handler for 'hermes jovaltus setup'.
 
     1. Create jovaltus-agent profile if missing.
-    2. Link plugin from global plugins dir into profile (auto symlink).
-    3. Install bundled skills (global).
-    4. Optionally apply SOUL.md (interactive, default: yes).
-    5. Persist installation state.
+    2. Install bundled skills (global).
+    3. Optionally apply SOUL.md (interactive, default: yes).
+    4. Persist installation state.
     """
     print("⚡ Jovaltus Setup")
     print("━" * 40)
@@ -338,11 +292,7 @@ def _setup_command(args) -> None:  # noqa: ARG001
     if profile_ok:
         print(f"  ✓ Profile '{_get_profile_dir()}' ready")
 
-    # Step 2: Link plugin to profile
-    print("\n🔗 Plugin Link")
-    _link_plugin_to_profile()
-
-    # Step 3: Bundled skills
+    # Step 2: Bundled skills
     print("\n📚 Bundled Skills")
     with_skills = _prompt_yes_no("  Install bundled skills?", default=True)
     if with_skills:

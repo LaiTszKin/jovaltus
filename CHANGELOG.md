@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## v0.3.2 — 2026-07-11
+
+### Changed
+
+- **Architecture**: plugin CLI commands registered from the default profile (like caelterra) instead of requiring a dedicated profile — `hermes jovaltus setup/status/update` work from any terminal after `hermes plugins install`
+- **`setup` flow simplified**: removed `_link_plugin_to_profile()` — plugin stays in default profile, no profile-plugin linking needed
+
+---
+
 ## v0.3.1 — 2026-07-11
 
 ### Added
