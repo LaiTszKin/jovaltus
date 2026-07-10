@@ -46,13 +46,18 @@ def _spawn_review_subagent(
     subagent_label: str,
     task_id: str,
     project_dir: str,
+    toolsets: list | None = None,
 ) -> str:
     """Shared logic for verify/simplify handlers: look up task, diff, and spawn subagent.
 
     All parameters are literals supplied by each handler's closure so that
     log messages, context titles, and the phase field reflect the correct phase.
+    toolsets defaults to ["terminal", "file"] if not provided.
     Returns a JSON string with spawn results or error.
     """
+    if toolsets is None:
+        toolsets = ["terminal", "file"]
+
     task = state.get_task(task_id)
     if not task:
         return json.dumps(
@@ -67,11 +72,12 @@ def _spawn_review_subagent(
         files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
 
         logger.info(
-            "jovaltus_%s: spawning %s subagent task=%s files=%d",
+            "jovaltus_%s: spawning %s subagent task=%s files=%d toolsets=%s",
             phase_label,
             subagent_label,
             task_id,
             len(files),
+            toolsets,
         )
 
         ctx.dispatch_tool(
@@ -83,6 +89,7 @@ def _spawn_review_subagent(
                     f"Working directory: {project_dir}\n"
                     f"Task: {task_id}\n"
                     f"Baseline commit: {task['start_hash']}\n"
+                    f"Toolsets: {toolsets}\n"
                     f"Files changed:\n"
                     + "\n".join(
                         f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
@@ -90,7 +97,7 @@ def _spawn_review_subagent(
                     )
                     + f"\n\n## {diff_label}\n\n```diff\n{diff_text}\n```"
                 ),
-                "toolsets": ["terminal", "file"],
+                "toolsets": toolsets,
             },
         )
 
@@ -103,6 +110,7 @@ def _spawn_review_subagent(
                 "project_dir": project_dir,
                 "subagent": "spawned",
                 "phase": phase_label,
+                "toolsets": toolsets,
             }
         )
 
@@ -237,6 +245,7 @@ def make_verify_handler(ctx):
             "verify",
             task_id,
             project_dir,
+            toolsets=["terminal", "file", "computer_use"],
         )
 
     return handler

@@ -40,8 +40,13 @@ _STAGE_HINTS: dict[str, list[str]] = {
         "When it finishes, review the changes, then call `jovaltus_verify(task_id=...)`.",
     ],
     "verify": [
-        "Verification subagent is running — wait for its report.",
-        "When it finishes, review the findings, then call `jovaltus_simplify(task_id=...)`.",
+        "Verification subagent is running the Three-Layer Protocol:",
+        "  Layer 1 — Static: tests, lint, type check, diff review (fastest, run first)",
+        "  Layer 2 — Behavior: start dev server, interact (computer_use or curl), test edge cases",
+        "  Layer 3 — Logs: capture runtime logs, grep for ERROR/Traceback/5xx, correlate with behavior",
+        "The subagent produces a COMPOSITE VERIFICATION REPORT at the end.",
+        "Read the report — only proceed if verdict is ALL-PASS.",
+        "Call `jovaltus_simplify(task_id=...)` when ready for the next phase.",
     ],
     "simplify": [
         "Simplify subagent is running — wait for its report.",

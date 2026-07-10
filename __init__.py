@@ -654,7 +654,8 @@ def _setup_argparse(subparser):
 
     # Add our own -h/--help flag
     subparser.add_argument(
-        "-h", "--help",
+        "-h",
+        "--help",
         action="store_true",
         dest="jovaltus_help",
         help="Show this comprehensive help message and exit",
