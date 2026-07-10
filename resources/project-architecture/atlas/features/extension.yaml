@@ -1,7 +1,0 @@
-slug: extension
-title: extension
-story: ''
-dependsOn:
-  - core-engine
-submodules: []
-edges: []

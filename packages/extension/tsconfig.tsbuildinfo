@@ -1,1 +1,0 @@
-{"root":["./src/chat-panel.ts","./src/config-provider.ts","./src/extension.ts","./src/secrets.ts","./src/__tests__/bundle.test.ts","./src/__tests__/chat-panel.test.ts","./src/__tests__/secrets.test.ts"],"version":"5.9.3"}

@@ -1,9 +1,0 @@
-src/**
-dist/**
-!dist/extension.js
-!dist/webview/**
-*.tsbuildinfo
-tsconfig.json
-tsconfig.webview.json
-vite.config.ts
-build.mjs
