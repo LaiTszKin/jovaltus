@@ -60,7 +60,9 @@ def _ensure_profile(profile_name: str = "jovaltus-agent") -> bool:
     try:
         subprocess.run(
             ["hermes", "profile", "create", profile_name],
-            check=True, capture_output=True, text=True,
+            check=True,
+            capture_output=True,
+            text=True,
         )
         print(f"  ✓ Profile '{profile_name}' created")
         return True
@@ -124,7 +126,7 @@ def _install_bundled_skill(profile_name: str = "jovaltus-agent") -> bool:
         skill_dst.parent.mkdir(parents=True, exist_ok=True)
         skill_dst.write_text(skill_src.read_text())
         print(f"  ✓ Skill '{skill_name}' installed to {skill_dst}")
-        print(f"    Available in: hermes skills list")
+        print("    Available in: hermes skills list")
         print(f"    Load via:     skill_view('{skill_name}')")
         return True
     except OSError as e:
@@ -195,7 +197,7 @@ def _update_check(args) -> None:
         print("! No remote 'origin' configured — cannot check for updates.")
         return
 
-    print(f"🔍 Checking for Jovaltus updates...")
+    print("🔍 Checking for Jovaltus updates...")
     print(f"   Remote: {remote_url}")
 
     local_head = git_utils.get_local_head(project_dir)
@@ -249,7 +251,7 @@ def _update_pull(args) -> None:
         print("! No remote 'origin' configured — cannot update.")
         return
 
-    print(f"📦 Updating Jovaltus...")
+    print("📦 Updating Jovaltus...")
     print(f"   Remote: {remote_url}")
 
     # Check for uncommitted changes first
@@ -278,7 +280,6 @@ def _update_pull(args) -> None:
     # Check what's coming
     info = git_utils.get_ahead_behind(project_dir)
     behind = info.get("behind", 0)
-    remote_head = info.get("remote_head", "")
 
     local_head = git_utils.get_local_head(project_dir)
     print(f"\n   Before: {local_head[:12] if local_head else 'unknown'}")
@@ -295,7 +296,7 @@ def _update_pull(args) -> None:
     if result["success"]:
         after = result.get("after", "")
         print(f"   After:  {after[:12] if after else 'unknown'}")
-        print(f"\n✅ Jovaltus updated successfully!")
+        print("\n✅ Jovaltus updated successfully!")
         print("   Restart any running Hermes sessions to see changes.")
     else:
         print(f"\n✗ Update failed: {result['message']}")
@@ -325,7 +326,9 @@ def _setup_argparse(subparser):
     subs = subparser.add_subparsers(dest="jovaltus_command")
 
     # ── setup ──────────────────────────────────────────────────
-    subs.add_parser("setup", help="Create jovaltus-agent profile, apply SOUL.md, and verify setup")
+    subs.add_parser(
+        "setup", help="Create jovaltus-agent profile, apply SOUL.md, and verify setup"
+    )
 
     # ── update ─────────────────────────────────────────────────
     update_parser = subs.add_parser(
@@ -333,7 +336,8 @@ def _setup_argparse(subparser):
         help="Check for and apply Jovaltus plugin updates",
     )
     update_parser.add_argument(
-        "--check", action="store_true",
+        "--check",
+        action="store_true",
         help="Only check for updates without pulling",
     )
 

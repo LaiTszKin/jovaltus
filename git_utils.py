@@ -31,9 +31,9 @@ def get_head_hash(repo_path: Optional[str] = None) -> str:
     return subprocess.check_output(cmd, text=True).strip()
 
 
-def get_diff(start_hash: str,
-             end: str = "HEAD",
-             repo_path: Optional[str] = None) -> str:
+def get_diff(
+    start_hash: str, end: str = "HEAD", repo_path: Optional[str] = None
+) -> str:
     """Return the git diff between two refs as a string."""
     cmd = _git_cmd(repo_path) + ["diff", start_hash, end]
     try:
@@ -42,9 +42,9 @@ def get_diff(start_hash: str,
         raise RuntimeError(f"git diff failed: {e.stderr.strip()}") from e
 
 
-def get_diff_stat(start_hash: str,
-                  end: str = "HEAD",
-                  repo_path: Optional[str] = None) -> list[dict]:
+def get_diff_stat(
+    start_hash: str, end: str = "HEAD", repo_path: Optional[str] = None
+) -> list[dict]:
     """Return a list of changed files with stats.
 
     Each entry: {"path": str, "additions": int, "deletions": int}
@@ -61,11 +61,13 @@ def get_diff_stat(start_hash: str,
     for line in out.splitlines():
         parts = line.split("\t")
         if len(parts) == 3:
-            files.append({
-                "additions": int(parts[0]) if parts[0] != "-" else 0,
-                "deletions": int(parts[1]) if parts[1] != "-" else 0,
-                "path": parts[2],
-            })
+            files.append(
+                {
+                    "additions": int(parts[0]) if parts[0] != "-" else 0,
+                    "deletions": int(parts[1]) if parts[1] != "-" else 0,
+                    "path": parts[2],
+                }
+            )
     return files
 
 
@@ -113,8 +115,9 @@ def get_remote_head(repo_path: Optional[str] = None) -> str | None:
         return None
 
 
-def get_local_head(repo_path: Optional[str] = None,
-                   branch: str | None = None) -> str | None:
+def get_local_head(
+    repo_path: Optional[str] = None, branch: str | None = None
+) -> str | None:
     """Return the latest commit SHA on a local branch, defaulting to current HEAD."""
     ref = branch or "HEAD"
     cmd = _git_cmd(repo_path) + ["rev-parse", ref]
@@ -124,9 +127,9 @@ def get_local_head(repo_path: Optional[str] = None,
         return None
 
 
-def get_ahead_behind(repo_path: Optional[str] = None,
-                     base: str = "HEAD",
-                     remote_ref: str | None = None) -> dict:
+def get_ahead_behind(
+    repo_path: Optional[str] = None, base: str = "HEAD", remote_ref: str | None = None
+) -> dict:
     """Return ahead/behind counts between local and remote refs.
 
     Returns {"ahead": int, "behind": int, "remote_head": str | None}.
@@ -142,7 +145,12 @@ def get_ahead_behind(repo_path: Optional[str] = None,
         return {"ahead": 0, "behind": 0, "remote_head": None}
 
     # Count ahead/behind
-    cmd = _git_cmd(repo_path) + ["rev-list", "--left-right", "--count", f"{base}...{ref}"]
+    cmd = _git_cmd(repo_path) + [
+        "rev-list",
+        "--left-right",
+        "--count",
+        f"{base}...{ref}",
+    ]
     try:
         out = subprocess.check_output(cmd, text=True).strip()
         parts = out.split("\t")
@@ -153,8 +161,9 @@ def get_ahead_behind(repo_path: Optional[str] = None,
         return {"ahead": 0, "behind": 0, "remote_head": remote_sha}
 
 
-def is_ancestor(ancestor: str, descendant: str,
-                repo_path: Optional[str] = None) -> bool:
+def is_ancestor(
+    ancestor: str, descendant: str, repo_path: Optional[str] = None
+) -> bool:
     """Check if `ancestor` is an ancestor of `descendant`.
 
     Returns True if ancestor == descendant (same commit).
@@ -171,24 +180,33 @@ def pull_branch(repo_path: Optional[str] = None) -> dict:
     """
     before = get_local_head(repo_path)
     if not before:
-        return {"success": False, "message": "Could not determine current HEAD",
-                "before": None, "after": None}
+        return {
+            "success": False,
+            "message": "Could not determine current HEAD",
+            "before": None,
+            "after": None,
+        }
 
     branch = get_default_branch(repo_path)
-    remote_ref = f"origin/{branch}"
     cmd = _git_cmd(repo_path) + ["pull", "--ff-only", "origin", branch]
     try:
         subprocess.run(cmd, check=True, capture_output=True, timeout=60)
         after = get_local_head(repo_path)
-        return {"success": True, "message": f"Updated {branch}",
-                "before": before, "after": after}
+        return {
+            "success": True,
+            "message": f"Updated {branch}",
+            "before": before,
+            "after": after,
+        }
     except subprocess.CalledProcessError as e:
-        return {"success": False,
-                "message": e.stderr.strip() or "Pull failed (not fast-forward?)",
-                "before": before, "after": before}
+        return {
+            "success": False,
+            "message": e.stderr.strip() or "Pull failed (not fast-forward?)",
+            "before": before,
+            "after": before,
+        }
     except Exception as e:
-        return {"success": False, "message": str(e),
-                "before": before, "after": before}
+        return {"success": False, "message": str(e), "before": before, "after": before}
 
 
 def stage_all(repo_path: Optional[str] = None) -> None:
@@ -197,8 +215,7 @@ def stage_all(repo_path: Optional[str] = None) -> None:
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def commit(message: str,
-           repo_path: Optional[str] = None) -> dict:
+def commit(message: str, repo_path: Optional[str] = None) -> dict:
     """Commit staged changes. Returns {"success": bool, "message": str}."""
     cmd = _git_cmd(repo_path) + ["commit", "-m", message]
     result = subprocess.run(cmd, capture_output=True, text=True)

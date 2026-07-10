@@ -49,3 +49,17 @@ def clear_tasks() -> int:
         n = len(_tasks)
         _tasks.clear()
         return n
+
+
+def update_task_start_hash(task_id: str, new_start_hash: str) -> bool:
+    """Update the start_hash of an existing task.
+
+    Useful for re-verifying against a different baseline.
+    Returns True if the task was updated, False if not found.
+    """
+    with _lock:
+        task = _tasks.get(task_id)
+        if task is None:
+            return False
+        task["start_hash"] = new_start_hash
+        return True

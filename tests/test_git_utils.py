@@ -6,7 +6,6 @@ Uses temporary git repositories to test git operations.
 import subprocess
 from pathlib import Path
 
-import pytest
 
 from jovaltus import git_utils
 
@@ -34,10 +33,14 @@ def test_get_diff_no_changes(git_repo: Path):
 def test_get_diff_with_changes(git_repo: Path):
     h = git_utils.get_head_hash(str(git_repo))
     (git_repo / "file.txt").write_text("hello")
-    subprocess.run(["git", "add", "file.txt"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "file.txt"], cwd=git_repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "add file"],
-        cwd=git_repo, check=True, capture_output=True,
+        cwd=git_repo,
+        check=True,
+        capture_output=True,
     )
     diff = git_utils.get_diff(h, "HEAD", str(git_repo))
     assert "hello" in diff
@@ -47,10 +50,14 @@ def test_get_diff_with_changes(git_repo: Path):
 def test_get_diff_stat(git_repo: Path):
     h = git_utils.get_head_hash(str(git_repo))
     (git_repo / "app.py").write_text("print('hi')\n")
-    subprocess.run(["git", "add", "app.py"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "app.py"], cwd=git_repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "add app"],
-        cwd=git_repo, check=True, capture_output=True,
+        cwd=git_repo,
+        check=True,
+        capture_output=True,
     )
     stats = git_utils.get_diff_stat(h, "HEAD", str(git_repo))
     assert len(stats) == 1
@@ -59,7 +66,9 @@ def test_get_diff_stat(git_repo: Path):
 
 def test_stage_and_commit(git_repo: Path):
     (git_repo / "new.txt").write_text("new content")
-    subprocess.run(["git", "add", "new.txt"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "new.txt"], cwd=git_repo, check=True, capture_output=True
+    )
     cr = git_utils.commit("test commit", str(git_repo))
     assert cr["success"] is True
 
@@ -130,8 +139,12 @@ def test_is_ancestor_descendant(git_repo: Path):
     h1 = git_utils.get_head_hash(str(git_repo))
     # Make a new commit
     (git_repo / "new.txt").write_text("content")
-    subprocess.run(["git", "add", "new.txt"], cwd=git_repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "new"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "new.txt"], cwd=git_repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "new"], cwd=git_repo, check=True, capture_output=True
+    )
     h2 = git_utils.get_head_hash(str(git_repo))
     assert git_utils.is_ancestor(h1, h2, str(git_repo)) is True
 
@@ -140,8 +153,12 @@ def test_is_ancestor_not(git_repo: Path):
     """A descendant should NOT be an ancestor of its ancestor."""
     h1 = git_utils.get_head_hash(str(git_repo))
     (git_repo / "other.txt").write_text("content")
-    subprocess.run(["git", "add", "other.txt"], cwd=git_repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "other"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "other.txt"], cwd=git_repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "other"], cwd=git_repo, check=True, capture_output=True
+    )
     h2 = git_utils.get_head_hash(str(git_repo))
     assert git_utils.is_ancestor(h2, h1, str(git_repo)) is False
 

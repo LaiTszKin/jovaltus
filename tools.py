@@ -47,35 +47,47 @@ def make_implement_handler(ctx):
         project_dir = _resolve_dir(args.get("project_dir"))
 
         if not git_utils.is_git_repo(project_dir):
-            return json.dumps({
-                "error": f"Not a git repository: {project_dir}",
-                "hint": "Make sure you're in or pointing at a git repo",
-            })
+            return json.dumps(
+                {
+                    "error": f"Not a git repository: {project_dir}",
+                    "hint": "Make sure you're in or pointing at a git repo",
+                }
+            )
 
         try:
             start_hash = git_utils.get_head_hash(project_dir)
             task_id = state.create_task(project_dir, start_hash)
 
-            logger.info("jovaltus_implement: spawning implement subagent "
-                        "task=%s hash=%s dir=%s", task_id, start_hash, project_dir)
+            logger.info(
+                "jovaltus_implement: spawning implement subagent "
+                "task=%s hash=%s dir=%s",
+                task_id,
+                start_hash,
+                project_dir,
+            )
 
-            ctx.dispatch_tool("delegate_task", {
-                "goal": prompt,
-                "context": (
-                    f"## Project Context\n\n"
-                    f"Working directory: {project_dir}\n"
-                    f"Reference commit: {start_hash}\n"
-                ),
-                "toolsets": ["terminal", "file"],
-            })
+            ctx.dispatch_tool(
+                "delegate_task",
+                {
+                    "goal": prompt,
+                    "context": (
+                        f"## Project Context\n\n"
+                        f"Working directory: {project_dir}\n"
+                        f"Reference commit: {start_hash}\n"
+                    ),
+                    "toolsets": ["terminal", "file"],
+                },
+            )
 
-            return json.dumps({
-                "task_id": task_id,
-                "start_hash": start_hash,
-                "project_dir": project_dir,
-                "subagent": "spawned",
-                "phase": "implement",
-            })
+            return json.dumps(
+                {
+                    "task_id": task_id,
+                    "start_hash": start_hash,
+                    "project_dir": project_dir,
+                    "subagent": "spawned",
+                    "phase": "implement",
+                }
+            )
 
         except Exception as e:
             logger.exception("jovaltus_implement failed")
@@ -94,42 +106,54 @@ def make_verify_handler(ctx):
 
         task = state.get_task(task_id)
         if not task:
-            return json.dumps({
-                "error": f"Task '{task_id}' not found. "
-                         "Did you call jovaltus_implement first?",
-            })
+            return json.dumps(
+                {
+                    "error": f"Task '{task_id}' not found. "
+                    "Did you call jovaltus_implement first?",
+                }
+            )
 
         try:
             diff_text = git_utils.get_diff(task["start_hash"], "HEAD", project_dir)
             files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
 
-            logger.info("jovaltus_verify: spawning verify subagent "
-                        "task=%s files=%d", task_id, len(files))
+            logger.info(
+                "jovaltus_verify: spawning verify subagent task=%s files=%d",
+                task_id,
+                len(files),
+            )
 
-            ctx.dispatch_tool("delegate_task", {
-                "goal": prompt,
-                "context": (
-                    f"## Verification Context\n\n"
-                    f"Working directory: {project_dir}\n"
-                    f"Task: {task_id}\n"
-                    f"Baseline commit: {task['start_hash']}\n"
-                    f"Files changed:\n"
-                    + "\n".join(f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
-                                for f in files)
-                    + f"\n\n## Git Diff\n\n```diff\n{diff_text}\n```"
-                ),
-                "toolsets": ["terminal", "file"],
-            })
+            ctx.dispatch_tool(
+                "delegate_task",
+                {
+                    "goal": prompt,
+                    "context": (
+                        f"## Verification Context\n\n"
+                        f"Working directory: {project_dir}\n"
+                        f"Task: {task_id}\n"
+                        f"Baseline commit: {task['start_hash']}\n"
+                        f"Files changed:\n"
+                        + "\n".join(
+                            f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
+                            for f in files
+                        )
+                        + f"\n\n## Git Diff\n\n```diff\n{diff_text}\n```"
+                    ),
+                    "toolsets": ["terminal", "file"],
+                },
+            )
 
-            return json.dumps({
-                "task_id": task_id,
-                "start_hash": task["start_hash"],
-                "diff": diff_text,
-                "files_changed": files,
-                "project_dir": project_dir,
-                "subagent": "spawned",
-                "phase": "verify",
-            })
+            return json.dumps(
+                {
+                    "task_id": task_id,
+                    "start_hash": task["start_hash"],
+                    "diff": diff_text,
+                    "files_changed": files,
+                    "project_dir": project_dir,
+                    "subagent": "spawned",
+                    "phase": "verify",
+                }
+            )
 
         except Exception as e:
             logger.exception("jovaltus_verify failed")
@@ -148,42 +172,54 @@ def make_simplify_handler(ctx):
 
         task = state.get_task(task_id)
         if not task:
-            return json.dumps({
-                "error": f"Task '{task_id}' not found. "
-                         "Did you call jovaltus_implement first?",
-            })
+            return json.dumps(
+                {
+                    "error": f"Task '{task_id}' not found. "
+                    "Did you call jovaltus_implement first?",
+                }
+            )
 
         try:
             diff_text = git_utils.get_diff(task["start_hash"], "HEAD", project_dir)
             files = git_utils.get_diff_stat(task["start_hash"], "HEAD", project_dir)
 
-            logger.info("jovaltus_simplify: spawning simplifier subagent "
-                        "task=%s files=%d", task_id, len(files))
+            logger.info(
+                "jovaltus_simplify: spawning simplifier subagent task=%s files=%d",
+                task_id,
+                len(files),
+            )
 
-            ctx.dispatch_tool("delegate_task", {
-                "goal": prompt,
-                "context": (
-                    f"## Simplification Context\n\n"
-                    f"Working directory: {project_dir}\n"
-                    f"Task: {task_id}\n"
-                    f"Baseline commit: {task['start_hash']}\n"
-                    f"Files changed:\n"
-                    + "\n".join(f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
-                                for f in files)
-                    + f"\n\n## Clean Diff\n\n```diff\n{diff_text}\n```"
-                ),
-                "toolsets": ["terminal", "file"],
-            })
+            ctx.dispatch_tool(
+                "delegate_task",
+                {
+                    "goal": prompt,
+                    "context": (
+                        f"## Simplification Context\n\n"
+                        f"Working directory: {project_dir}\n"
+                        f"Task: {task_id}\n"
+                        f"Baseline commit: {task['start_hash']}\n"
+                        f"Files changed:\n"
+                        + "\n".join(
+                            f"  {f['path']} (+{f['additions']}/-{f['deletions']})"
+                            for f in files
+                        )
+                        + f"\n\n## Clean Diff\n\n```diff\n{diff_text}\n```"
+                    ),
+                    "toolsets": ["terminal", "file"],
+                },
+            )
 
-            return json.dumps({
-                "task_id": task_id,
-                "start_hash": task["start_hash"],
-                "diff": diff_text,
-                "files_changed": files,
-                "project_dir": project_dir,
-                "subagent": "spawned",
-                "phase": "simplify",
-            })
+            return json.dumps(
+                {
+                    "task_id": task_id,
+                    "start_hash": task["start_hash"],
+                    "diff": diff_text,
+                    "files_changed": files,
+                    "project_dir": project_dir,
+                    "subagent": "spawned",
+                    "phase": "simplify",
+                }
+            )
 
         except Exception as e:
             logger.exception("jovaltus_simplify failed")

@@ -72,15 +72,21 @@ def test_verify_success(ctx: MagicMock, git_repo: Path):
 
     # Make a change so there's something to diff
     (git_repo / "file.py").write_text("x = 1")
-    subprocess.run(["git", "add", "file.py"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "file.py"], cwd=git_repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "add file"],
-        cwd=git_repo, check=True, capture_output=True,
+        cwd=git_repo,
+        check=True,
+        capture_output=True,
     )
 
     ctx.reset_mock()
     verify_handler = make_verify_handler(ctx)
-    result = json.loads(verify_handler({"task_id": task_id, "project_dir": str(git_repo)}))
+    result = json.loads(
+        verify_handler({"task_id": task_id, "project_dir": str(git_repo)})
+    )
 
     assert result["subagent"] == "spawned"
     assert result["phase"] == "verify"
@@ -106,15 +112,21 @@ def test_simplify_success(ctx: MagicMock, git_repo: Path):
     task_id = impl_result["task_id"]
 
     (git_repo / "app.py").write_text("print(1)\n")
-    subprocess.run(["git", "add", "app.py"], cwd=git_repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "app.py"], cwd=git_repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "add app"],
-        cwd=git_repo, check=True, capture_output=True,
+        cwd=git_repo,
+        check=True,
+        capture_output=True,
     )
 
     ctx.reset_mock()
     simplify_handler = make_simplify_handler(ctx)
-    result = json.loads(simplify_handler({"task_id": task_id, "project_dir": str(git_repo)}))
+    result = json.loads(
+        simplify_handler({"task_id": task_id, "project_dir": str(git_repo)})
+    )
 
     assert result["subagent"] == "spawned"
     assert result["phase"] == "simplify"

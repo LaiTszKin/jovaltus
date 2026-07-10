@@ -3,6 +3,8 @@
 ## Build & Test
 
 - `uv run pytest -v` — Run full test suite (36 tests, ~2.4s)
+- `uv run ruff check .` — Lint (zero warnings)
+- `uv run ruff format --check .` — Format check (auto-format with `ruff format .`)
 - `uv run python3 -m py_compile *.py tests/*.py` — Type/syntax check
 - All tests pass before commit. No lint warnings.
 

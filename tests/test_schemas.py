@@ -26,5 +26,9 @@ def test_simplify_schema_requires_task_id():
 
 def test_all_schemas_mention_subagent_spawning():
     """All tool descriptions should mention that they spawn subagents."""
-    for schema in [schemas.IMPLEMENT_SCHEMA, schemas.VERIFY_SCHEMA, schemas.SIMPLIFY_SCHEMA]:
+    for schema in [
+        schemas.IMPLEMENT_SCHEMA,
+        schemas.VERIFY_SCHEMA,
+        schemas.SIMPLIFY_SCHEMA,
+    ]:
         assert "spawn" in schema["description"].lower()
