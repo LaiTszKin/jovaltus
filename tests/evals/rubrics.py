@@ -334,8 +334,7 @@ DIM_DARK_MODE = RubricDimension(
         ),
         ScoringBand(
             5,
-            "Toggle exists but dark classes sparse. "
-            "Only 1–2 elements respond.",
+            "Toggle exists but dark classes sparse. Only 1–2 elements respond.",
         ),
         ScoringBand(
             3,
@@ -363,8 +362,7 @@ DIM_INTEGRATION = RubricDimension(
         ),
         ScoringBand(
             7,
-            "Connects but CORS not configured. Most CRUD works, "
-            "one endpoint fails.",
+            "Connects but CORS not configured. Most CRUD works, one endpoint fails.",
         ),
         ScoringBand(
             5,
@@ -373,8 +371,7 @@ DIM_INTEGRATION = RubricDimension(
         ),
         ScoringBand(
             3,
-            "API stubs exist but not functional. "
-            "Falls back to hardcoded data.",
+            "API stubs exist but not functional. Falls back to hardcoded data.",
         ),
         ScoringBand(0, "Entirely mock data, no API integration attempt."),
     ],
@@ -399,8 +396,7 @@ DIM_ORGANIZATION = RubricDimension(
         ),
         ScoringBand(
             7,
-            "Good separation but one side monolithic "
-            "(e.g. all backend in main.py).",
+            "Good separation but one side monolithic (e.g. all backend in main.py).",
         ),
         ScoringBand(
             5,

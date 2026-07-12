@@ -36,9 +36,7 @@ from fabricium.evals.config import EvalConfig, load_config
 # ── Must be set *before* importing the config ───────────────────────
 
 if "EVAL_JOVALTUS_PLUGIN_DIR" not in os.environ:
-    os.environ["EVAL_JOVALTUS_PLUGIN_DIR"] = str(
-        Path(__file__).parent.parent.parent
-    )
+    os.environ["EVAL_JOVALTUS_PLUGIN_DIR"] = str(Path(__file__).parent.parent.parent)
 
 
 @pytest.fixture(scope="session")

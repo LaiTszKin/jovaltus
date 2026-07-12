@@ -2,42 +2,38 @@
 
 ## Build & Test
 
-- `uv run pytest -v` — Run full test suite (68 tests, ~3.6s)
-- `uv run ruff check .` — Lint (zero warnings)
-- `uv run ruff format --check .` — Format check (auto-format with `ruff format .`)
-- `uv run mypy --strict --no-site-packages *.py` — Type check (zero errors)
-- All tests pass before commit. No lint, format, or type warnings.
+- `uv run pytest -v` — Run full test suite (80 tests)
+- `uv run ruff check .` — Lint
+- `uv run ruff format --check .` — Format check
+- `uv run mypy` — Type check (strict mode, config in `pyproject.toml`)
+- Pre-commit runs lint → mypy → format on commit. Run manually: `pre-commit run --all-files`
+- All checks must pass before commit. Zero warnings on lint, type, and format.
 
-## Pre-commit Hooks (v0.5.0)
+## Tech Stack
 
-Three hooks run on every `git commit` in this order:
-
-1. **ruff check — lint** (must pass, blocks commit on failure)
-2. **mypy --strict — type check** (must pass, blocks commit on failure)
-3. **ruff format — auto-format** (reformats staged files after checks pass)
-
-Install: `pre-commit install` (already done)
-Run manually: `pre-commit run --all-files`
+- **Language**: Python 3.10+
+- **Package manager**: uv
+- **Framework**: fabricium ≥0.1.1 (Hermes plugin SDK — `HermesPlugin`, `git_utils`)
+- **Testing**: pytest ≥8 with fabricium test harness
+- **Lint/Format**: ruff ≥0.8 + mypy ≥1.16 (`--strict` via `pyproject.toml`)
+- **Build**: hatchling (src layout)
 
 ## Project Structure
 
-- `plugin.yaml` + `__init__.py` — Hermes plugin entry (root dir IS the package)
-- `tools.py` — Three tool handler factories (implement, verify, simplify)
-  - Dual-mode: task_id for stateful pipeline, before/after for stateless commit mode
-- `schemas.py` — Tool JSON schemas (what the LLM sees)
-  - verify/simplify schemas include optional before/after params
-- `state.py` — Thread-safe in-memory task state
-- `git_utils.py` — Git subprocess wrappers (list args, no shell=True)
-  - New in v0.2.0: remote update utilities (fetch, pull, ahead/behind check)
-- `SOUL.md` — Bundled agent identity file; applied to profile via `setup`
-- `prompts/*.md` — Subagent system prompts (editable without touching Python)
-- `skills/jovaltus-agent/SKILL.md` — Agent Mode workflow definition
-- `tests/` — 68 pytest tests across 7 test files + conftest.py
+- `src/jovaltus/` — Plugin package (src layout; root is NOT the package)
+- `src/jovaltus/__init__.py` + `plugin.yaml` — Plugin entry point
+- `src/jovaltus/tools.py` — Tool handler factories (implement, verify, simplify); dual-mode: task_id + commit-based
+- `src/jovaltus/schemas.py` — Tool JSON schemas for LLM consumption
+- `src/jovaltus/state.py` — Thread-safe in-memory task state
+- `src/jovaltus/hooks.py` — Plugin lifecycle hooks
+- `src/jovaltus/prompts/*.md` — Subagent system prompts (editable without touching Python)
+- `src/jovaltus/skills/` — Bundled agent skills (e.g. `jovaltus-agent`)
+- `tests/` — 80 pytest tests across 7 test files + conftest.py
 
 ## Key Constraints
 
 - All handler functions must accept `(args: dict, **kwargs)` and return JSON string
-- All git commands use list args (no `shell=True`)
+- All git commands use list args (no `shell=True`) — enforced by `fabricium.git_utils`
 - State uses `threading.Lock` for thread safety
 - Handler factories capture `ctx` in `register()` — closures, not class instances
 - Prompt files loaded at factory creation time, not at handler invocation
@@ -50,37 +46,29 @@ Run manually: `pre-commit run --all-files`
 - `docs/principles/` — Code conventions with source evidence
 - Every doc claim traces to source file + line range. `[INFERRED]` marks unverifiable claims.
 
-## CLI Commands (v0.3.0)
-
-- `hermes jovaltus setup` — Create profile, install bundled skills, apply SOUL.md
-  - Interactive prompts with TTY detection (falls back to safe defaults)
-  - Creates `jovaltus-agent` profile if missing
-  - Installs bundled skills to global skills directory
-  - Optionally writes `SOUL.md` to profile directory
-  - Persists installation state to `~/.hermes/jovaltus_state.json`
-- `hermes jovaltus status` — Show installation state per profile
-  - Displays profile name, installation mode, and last updated timestamp
-- `hermes jovaltus update --check` — Check for remote updates against origin
-- `hermes jovaltus update` — Pull latest changes
-  - Detects and removes stale bundled skills (interactive)
-  - Refreshes all bundled skills
-  - Re-applies SOUL.md where previously installed
-  - Refreshes timestamps
-
 ## Workflow
 
-### Stateful Pipeline (task_id mode)
+The Jovaltus pipeline has two modes:
 
-1. User confirms requirements (Phase 0)
-2. Main agent calls `jovaltus_implement` → handler spawns implement subagent
-3. Main agent calls `jovaltus_verify(task_id)` → handler spawns verification subagent
-4. Main agent calls `jovaltus_simplify(task_id)` → handler spawns simplifier subagent
+**Stateful (task_id):** Phase 0 confirmation → `jovaltus_implement` → `jovaltus_verify(task_id)` → `jovaltus_simplify(task_id)`
 
-### Stateless Commit Mode
+**Stateless (commit mode):** `jovaltus_verify(before=<hash>)` / `jovaltus_simplify(before=<hash>)` — operates on any commit range, no pipeline state. `task_id` and `before` are mutually exclusive.
 
-For verify and simplify tools, pass `before` (and optionally `after`) commit hashes
-instead of `task_id` to skip pipeline state and operate on any commit range:
-- `jovaltus_verify(before=<hash>)` → verifies before..HEAD
-- `jovaltus_verify(before=<hash>, after=<hash>)` → verifies exact range
-- `jovaltus_simplify(before=<hash>)` → simplifies before..HEAD
-- `task_id` and `before` are mutually exclusive
+For detailed CLI commands (`hermes jovaltus setup`, `status`, `update`), see `README.md`.
+
+## Boundaries
+
+**Always:**
+- Run tests before committing
+- Add tests for new behaviour
+- Match existing code style (ruff + mypy enforce this)
+
+**Ask first:**
+- Adding new dependencies
+- Changing the plugin API surface (schemas, tool signatures)
+- Modifying the bundled skill (`src/jovaltus/skills/jovaltus-agent/SKILL.md`)
+
+**Never:**
+- Commit `.env` files or secrets
+- Use `shell=True` in subprocess calls
+- Edit `generated/` or `__pycache__/` directories

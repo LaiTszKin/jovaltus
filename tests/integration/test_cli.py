@@ -38,18 +38,14 @@ class TestJovaltusSetup:
         # Jovaltus targets 'jovaltus-agent' — should appear in output
         assert_profile_in_output(result, PROFILE)
 
-    def test_setup_installs_skills(
-        self, hermes_test_env: HermesDockerTestEnv
-    ) -> None:
+    def test_setup_installs_skills(self, hermes_test_env: HermesDockerTestEnv) -> None:
         """Setup should install the bundled jovaltus-agent skill."""
         result = hermes_test_env.run_cli(PLUGIN, "setup", timeout=90)
         CliAssert.exit_code(result)
         # Jovaltus ships with a 'jovaltus-agent' skill in skills/
         assert_skills_installed(result)
 
-    def test_setup_is_idempotent(
-        self, hermes_test_env: HermesDockerTestEnv
-    ) -> None:
+    def test_setup_is_idempotent(self, hermes_test_env: HermesDockerTestEnv) -> None:
         """Running setup multiple times should always succeed."""
         for _ in range(3):
             result = hermes_test_env.run_cli(PLUGIN, "setup", timeout=90)
@@ -96,9 +92,7 @@ class TestJovaltusUpdateCheck:
 class TestJovaltusEdgeCases:
     """Edge cases for single-profile mode."""
 
-    def test_unknown_command_fails(
-        self, hermes_test_env: HermesDockerTestEnv
-    ) -> None:
+    def test_unknown_command_fails(self, hermes_test_env: HermesDockerTestEnv) -> None:
         """Nonexistent subcommand should exit non-zero."""
         result = hermes_test_env.run_cli(PLUGIN, "bad-command")
         assert result.exit_code != 0
