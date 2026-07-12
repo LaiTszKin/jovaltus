@@ -23,7 +23,7 @@ description: >-
   When in doubt: do NOT load. Confirm with the user before
   committing to a 4-phase run.
 author: LaiTszKin
-version: 0.4.0
+version: 0.5.0
 metadata:
   jovaltus:
     tags: [development, pipeline, code-quality, verification, multi-agent]

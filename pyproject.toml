@@ -1,6 +1,6 @@
 [project]
 name = "jovaltus"
-version = "0.4.0"
+version = "0.5.0"
 description = "Jovaltus Agent Mode — Hermes plugin for automated development pipeline"
 requires-python = ">=3.10"
 dependencies = [
